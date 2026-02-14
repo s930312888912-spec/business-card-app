@@ -1,0 +1,861 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111827" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="名片APP" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="./icon-192.png" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>名片管理APP（桌面APP/PWA）</title>
+  <style>
+    :root{
+      --bg:#f5f7fa;
+      --card:#ffffff;
+      --text:#0f172a;
+      --muted:#475569;
+      --line:#e2e8f0;
+      --primary:#2563eb;
+      --primary2:#1d4ed8;
+      --danger:#dc2626;
+      --shadow: 0 10px 30px rgba(2,6,23,.08);
+      --radius:16px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", Arial, sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    header{
+      position:sticky; top:0; z-index:10;
+      background:rgba(245,247,250,.88);
+      backdrop-filter: blur(12px);
+      border-bottom:1px solid var(--line);
+      padding: 14px 14px calc(14px + env(safe-area-inset-top));
+    }
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
+    .title{font-weight:800; letter-spacing:.3px; font-size:18px}
+    .sub{color:var(--muted); font-size:12px}
+    .container{max-width:980px; margin:0 auto; padding:14px 14px calc(24px + env(safe-area-inset-bottom));}
+    .tabs{
+      display:flex; gap:8px; margin-top:10px;
+    }
+    .tab{
+      border:1px solid var(--line);
+      background:var(--card);
+      padding:10px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:650;
+      color:var(--muted);
+      user-select:none;
+    }
+    .tab.active{border-color:rgba(37,99,235,.25); color:var(--text); box-shadow: var(--shadow);}
+    .panel{display:none; margin-top:14px}
+    .panel.active{display:block}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    @media(min-width:860px){
+      .grid.two{grid-template-columns: 1.1fr .9fr;}
+      .grid.form{grid-template-columns: 1fr 1fr;}
+    }
+    label{display:block; font-weight:700; margin-bottom:6px}
+    input[type="text"], input[type="tel"], input[type="email"], textarea, select{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 12px;
+      font-size:15px;
+      outline:none;
+      background:#fff;
+    }
+    textarea{min-height:120px; resize:vertical}
+    input:focus, textarea:focus, select:focus{border-color: rgba(37,99,235,.55); box-shadow: 0 0 0 3px rgba(37,99,235,.12)}
+    .btn{
+      border:1px solid var(--line);
+      background:var(--card);
+      padding:11px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:750;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      user-select:none;
+    }
+    .btn.primary{background:var(--primary); color:#fff; border-color:transparent}
+    .btn.primary:active{background:var(--primary2)}
+    .btn.danger{background:#fff; color:var(--danger); border-color: rgba(220,38,38,.25)}
+    .btn.small{padding:8px 10px; border-radius:10px; font-weight:700}
+    .hint{color:var(--muted); font-size:12px; line-height:1.5}
+    .pill{
+      display:inline-flex; align-items:center;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-size:12px; font-weight:750; color:var(--muted);
+    }
+    .pill.on{border-color: rgba(37,99,235,.35); color:#1e40af; background: rgba(37,99,235,.07)}
+    .tags{
+      display:flex; flex-wrap:wrap; gap:8px;
+    }
+    .hr{height:1px; background:var(--line); margin:12px 0}
+    .list{
+      display:grid; grid-template-columns: 1fr; gap:10px;
+    }
+    .item{
+      display:flex; gap:12px; align-items:flex-start;
+      padding:12px;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:#fff;
+      cursor:pointer;
+    }
+    .thumb{
+      width:64px; height:64px; border-radius:12px; border:1px solid var(--line);
+      background:#f8fafc;
+      object-fit:cover;
+      flex:0 0 auto;
+    }
+    .meta{min-width:0}
+    .meta .name{font-weight:900; font-size:16px; margin-bottom:2px}
+    .meta .company{color:var(--muted); font-weight:700; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .meta .addr{color:var(--muted); font-size:12px; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+    .right{margin-left:auto; display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+    .empty{
+      text-align:center; padding:26px 14px; color:var(--muted)
+    }
+    .modal{
+      position:fixed; inset:0; z-index:50;
+      background: rgba(2,6,23,.45);
+      display:none; align-items:flex-end; justify-content:center;
+      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    }
+    .modal.on{display:flex}
+    .sheet{
+      width:min(980px, 100%);
+      background:#fff;
+      border-radius: 18px;
+      box-shadow: 0 20px 60px rgba(2,6,23,.25);
+      border:1px solid rgba(226,232,240,.9);
+      overflow:hidden;
+      max-height: 85vh;
+      display:flex; flex-direction:column;
+    }
+    .sheetHead{
+      padding:12px 14px; border-bottom:1px solid var(--line);
+      display:flex; align-items:center; gap:10px;
+    }
+    .sheetBody{
+      padding:14px; overflow:auto;
+    }
+    .kv{display:grid; grid-template-columns: 110px 1fr; gap:8px 12px; align-items:start; margin-top:10px}
+    .k{color:var(--muted); font-weight:850; font-size:12px}
+    .v{font-weight:650; font-size:14px; word-break:break-word}
+    .imgBig{width:100%; border:1px solid var(--line); border-radius:14px; object-fit:contain; background:#f8fafc}
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%);
+      bottom:18px; z-index:60;
+      background:#0f172a; color:#fff;
+      padding:10px 12px; border-radius:999px;
+      font-weight:800; font-size:13px;
+      display:none;
+      box-shadow: 0 10px 30px rgba(2,6,23,.22);
+    }
+    .toast.on{display:block}
+    .installTip{
+      margin-top:10px;
+      border:1px dashed rgba(37,99,235,.35);
+      background: rgba(37,99,235,.06);
+      padding:10px 12px;
+      border-radius:14px;
+      color:#1e3a8a;
+      font-weight:750;
+      font-size:12px;
+      line-height:1.55;
+    }
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="row" style="justify-content:space-between">
+      <div>
+        <div class="title">名片管理APP（桌面APP/PWA）</div>
+        <div class="sub">拍名片 → 存資料 → 依姓名/公司/地址/縣市/類別快速查回名片照片</div>
+      </div>
+      <div class="row">
+        <button class="btn small" id="btnBackup">匯出JSON</button>
+        <label class="btn small" for="importFile" style="cursor:pointer">匯入JSON</label>
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+      </div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="add">新增名片</div>
+      <div class="tab" data-tab="search">查詢</div>
+      <div class="tab" data-tab="about">安裝到桌面</div>
+    </div>
+  </header>
+
+  <div class="container">
+    <!-- ADD -->
+    <section class="panel active" id="panel-add">
+      <div class="grid two">
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <div style="font-weight:900; font-size:16px">1) 拍名片</div>
+            <div class="hint">支援相機拍照或選相簿</div>
+          </div>
+          <div class="hr"></div>
+
+          <div class="row">
+            <input id="cardImageInput" type="file" accept="image/*" capture="environment" />
+            <button class="btn" id="btnClearImage">清除照片</button>
+          </div>
+          <div class="hint" style="margin-top:8px">如果你的手機不支援直接呼叫相機，請改用「選擇照片」。</div>
+
+          <div style="margin-top:12px">
+            <img id="preview" class="imgBig" alt="名片預覽" style="display:none; max-height:360px" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row" style="justify-content:space-between">
+            <div style="font-weight:900; font-size:16px">2) 填寫資料</div>
+            <div class="hint">可先手動填，之後再接 GPT/OCR 自動填</div>
+          </div>
+          <div class="hr"></div>
+
+          <div class="grid form">
+            <div>
+              <label>姓名</label>
+              <input type="text" id="f_name" placeholder="例如：林彥宇" />
+            </div>
+            <div>
+              <label>職稱</label>
+              <input type="text" id="f_title" placeholder="例如：組長 / 顧問" />
+            </div>
+            <div>
+              <label>公司/單位</label>
+              <input type="text" id="f_company" placeholder="例如：中小企業總會" />
+            </div>
+            <div>
+              <label>縣市</label>
+              <select id="f_city"></select>
+            </div>
+            <div>
+              <label>電話</label>
+              <input type="tel" id="f_phone" placeholder="可填多筆，用逗號分隔" />
+            </div>
+            <div>
+              <label>Email</label>
+              <input type="email" id="f_email" placeholder="可填多筆，用逗號分隔" />
+            </div>
+            <div style="grid-column:1/-1">
+              <label>地址</label>
+              <input type="text" id="f_address" placeholder="例如：台北市中正區…" />
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>類別（可多選）</label>
+            <div class="tags" id="tagBox"></div>
+          </div>
+
+          <div style="margin-top:12px">
+            <label>備註</label>
+            <textarea id="f_note" placeholder="可記錄：認識場合、合作方向、後續追蹤事項…"></textarea>
+          </div>
+
+          <div class="row" style="margin-top:12px; justify-content:space-between">
+            <div class="hint">儲存後，可在「查詢」用關鍵字或類別把名片叫出來。</div>
+            <button class="btn primary" id="btnSave">儲存這張名片</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="panel" id="panel-search">
+      <div class="card">
+        <div class="row" style="justify-content:space-between">
+          <div style="font-weight:900; font-size:16px">查詢名片</div>
+          <div class="row">
+            <button class="btn danger small" id="btnDeleteAll">清空全部資料</button>
+          </div>
+        </div>
+        <div class="hr"></div>
+
+        <div class="grid form">
+          <div style="grid-column:1/-1">
+            <label>關鍵字（姓名 / 公司 / 地址 / 備註 / Email / 電話）</label>
+            <input type="text" id="q" placeholder="例如：林、台北、總會、顧問、合作…" />
+          </div>
+          <div>
+            <label>縣市篩選</label>
+            <select id="q_city"></select>
+          </div>
+          <div>
+            <label>類別篩選（可多選）</label>
+            <div class="tags" id="q_tagBox"></div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+        <div class="hint" id="countHint"></div>
+        <div class="list" id="resultList" style="margin-top:10px"></div>
+        <div class="empty" id="emptyTip" style="display:none">目前沒有符合條件的名片。</div>
+      </div>
+    </section>
+
+    <!-- ABOUT -->
+    <section class="panel" id="panel-about">
+      <div class="card">
+        <div style="font-weight:900; font-size:16px">把它變成「桌面APP」</div>
+        <div class="installTip" id="installTip">
+          ✅ 安裝條件：需要用 <b>HTTPS</b>（例如 GitHub Pages / Netlify / Vercel）打開本頁，才會出現「安裝」或「加入主畫面」。<br/>
+          <br/>
+          <b>Android（Chrome）：</b>打開頁面 → 右上角 ⋮ → <b>安裝應用程式</b> / <b>加入主畫面</b><br/>
+          <b>iPhone（Safari）：</b>打開頁面 → 分享按鈕 → <b>加入主畫面</b><br/>
+          <br/>
+          你下載的檔案裡已包含：<span class="mono">index.html</span>、<span class="mono">manifest.json</span>、<span class="mono">sw.js</span>、icon 圖示。把整個資料夾上傳到任一個 HTTPS 靜態主機即可。
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="row" style="gap:10px; flex-wrap:wrap">
+          <button class="btn primary" id="btnInstall" style="display:none">安裝到桌面</button>
+          <span class="hint">若你的瀏覽器支援，會顯示「安裝到桌面」按鈕。</span>
+        </div>
+
+        <div class="hr"></div>
+        <div class="hint">
+          🔒 資料儲存在你的手機本機（IndexedDB），不會自動上傳。<br/>
+          若你之後要「結合 GPT 自動辨識名片」，建議加一個後端（雲端函式）代理呼叫 API，避免把 API Key 放在前端。
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Detail Modal -->
+  <div class="modal" id="modal">
+    <div class="sheet" role="dialog" aria-modal="true">
+      <div class="sheetHead">
+        <button class="btn small" id="btnClose">關閉</button>
+        <div style="font-weight:950" id="d_title">名片</div>
+        <div style="margin-left:auto; display:flex; gap:8px">
+          <button class="btn small" id="btnEdit">編輯</button>
+          <button class="btn danger small" id="btnDelete">刪除</button>
+        </div>
+      </div>
+      <div class="sheetBody">
+        <img id="d_img" class="imgBig" alt="名片照片" style="max-height:360px"/>
+        <div class="kv" id="d_kv"></div>
+        <div style="margin-top:12px">
+          <div class="k">類別</div>
+          <div class="tags" id="d_tags" style="margin-top:8px"></div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="k">備註</div>
+          <div class="v" id="d_note" style="margin-top:8px; white-space:pre-wrap"></div>
+        </div>
+        <div class="hr"></div>
+        <div class="hint" id="d_time"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+<script>
+/** =========================
+ *  PWA install hook
+ *  ========================= */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('btnInstall').style.display = 'inline-flex';
+});
+document.getElementById('btnInstall').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('btnInstall').style.display = 'none';
+});
+
+// Service worker (required for Android "installable" criteria)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+
+/** =========================
+ *  Constants
+ *  ========================= */
+const TAGS = [
+  '受輔導企業','講師','合作單位','潛在企業','委員','潛在委員','其他'
+];
+const CITIES = ['全部','臺北市','新北市','桃園市','臺中市','臺南市','高雄市',
+  '基隆市','新竹市','嘉義市',
+  '新竹縣','苗栗縣','彰化縣','南投縣','雲林縣','嘉義縣','屏東縣',
+  '宜蘭縣','花蓮縣','臺東縣',
+  '澎湖縣','金門縣','連江縣',
+  '不確定'
+];
+
+/** =========================
+ *  IndexedDB helper
+ *  ========================= */
+const DB_NAME = 'bc_pwa_db';
+const DB_VER = 1;
+const STORE = 'cards';
+
+function idbOpen() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      const st = db.createObjectStore(STORE, { keyPath: 'id' });
+      st.createIndex('created_at', 'created_at');
+      st.createIndex('city', 'city');
+      st.createIndex('search_text', 'search_text');
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbTx(mode, fn){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, mode);
+    const st = tx.objectStore(STORE);
+    const out = fn(st);
+    tx.oncomplete = () => resolve(out);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function putCard(card){
+  return idbTx('readwrite', (st) => st.put(card));
+}
+async function getAllCards(){
+  const db = await idbOpen();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE,'readonly');
+    const st = tx.objectStore(STORE);
+    const req = st.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function deleteCard(id){
+  return idbTx('readwrite', (st) => st.delete(id));
+}
+async function clearAll(){
+  return idbTx('readwrite', (st) => st.clear());
+}
+
+/** =========================
+ *  UI helpers
+ *  ========================= */
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('on');
+  setTimeout(()=>el.classList.remove('on'), 1800);
+}
+function $(id){ return document.getElementById(id); }
+function normList(s){
+  if(!s) return [];
+  return s.split(/[,，;；\n]/).map(x=>x.trim()).filter(Boolean);
+}
+function buildSearchText(card){
+  const parts = [
+    card.name, card.title, card.company,
+    (card.phones||[]).join(' '), (card.emails||[]).join(' '),
+    card.address, card.city,
+    (card.tags||[]).join(' '),
+    card.note
+  ].filter(Boolean);
+  return parts.join(' ').toLowerCase();
+}
+function uuid(){
+  // short id good enough for local use
+  return 'c_' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+}
+
+/** =========================
+ *  Tabs
+ *  ========================= */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const tab=t.dataset.tab;
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    if(tab==='add') $('panel-add').classList.add('active');
+    if(tab==='search') { $('panel-search').classList.add('active'); refreshResults(); }
+    if(tab==='about') $('panel-about').classList.add('active');
+  });
+});
+
+/** =========================
+ *  Init selects/tags
+ *  ========================= */
+function initSelect(selId, includeAll=true){
+  const sel = $(selId);
+  sel.innerHTML = '';
+  CITIES.forEach((c, idx)=>{
+    if(!includeAll && c==='全部') return;
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+initSelect('f_city', false);
+initSelect('q_city', true);
+$('f_city').value = '不確定';
+$('q_city').value = '全部';
+
+function makeTagPills(containerId, onToggle){
+  const box = $(containerId);
+  box.innerHTML = '';
+  TAGS.forEach(tag=>{
+    const pill = document.createElement('div');
+    pill.className = 'pill';
+    pill.textContent = tag;
+    pill.dataset.tag = tag;
+    pill.addEventListener('click', ()=>{
+      pill.classList.toggle('on');
+      onToggle && onToggle();
+    });
+    box.appendChild(pill);
+  });
+}
+makeTagPills('tagBox');
+makeTagPills('q_tagBox', refreshResults);
+
+/** =========================
+ *  Image capture & compress
+ *  ========================= */
+let currentImageDataUrl = null;
+
+$('cardImageInput').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const dataUrl = await fileToDataURL(file);
+  // compress for storage
+  currentImageDataUrl = await compressImage(dataUrl, 1400, 0.82);
+  $('preview').src = currentImageDataUrl;
+  $('preview').style.display = 'block';
+});
+
+$('btnClearImage').addEventListener('click', ()=>{
+  $('cardImageInput').value='';
+  currentImageDataUrl=null;
+  $('preview').style.display='none';
+  toast('已清除照片');
+});
+
+function fileToDataURL(file){
+  return new Promise((resolve, reject)=>{
+    const r = new FileReader();
+    r.onload = ()=>resolve(r.result);
+    r.onerror = ()=>reject(r.error);
+    r.readAsDataURL(file);
+  });
+}
+function compressImage(dataUrl, maxW, quality){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const scale = Math.min(1, maxW / img.width);
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const c = document.createElement('canvas');
+      c.width=w; c.height=h;
+      const ctx=c.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+/** =========================
+ *  Save card
+ *  ========================= */
+$('btnSave').addEventListener('click', async ()=>{
+  const name = $('f_name').value.trim();
+  const company = $('f_company').value.trim();
+  const address = $('f_address').value.trim();
+  const city = $('f_city').value;
+  const tags = Array.from(document.querySelectorAll('#tagBox .pill.on')).map(x=>x.dataset.tag);
+  const note = $('f_note').value || '';
+
+  if(!currentImageDataUrl){
+    toast('請先拍照或選擇名片照片');
+    return;
+  }
+  if(!name && !company){
+    toast('至少填「姓名」或「公司/單位」其中一個');
+    return;
+  }
+
+  const card = {
+    id: uuid(),
+    name,
+    title: $('f_title').value.trim(),
+    company,
+    phones: normList($('f_phone').value),
+    emails: normList($('f_email').value),
+    address,
+    city,
+    tags,
+    note,
+    image_data_url: currentImageDataUrl,
+    created_at: new Date().toISOString()
+  };
+  card.search_text = buildSearchText(card);
+
+  await putCard(card);
+  toast('已儲存');
+
+  // reset form (keep city default)
+  $('f_name').value='';
+  $('f_title').value='';
+  $('f_company').value='';
+  $('f_phone').value='';
+  $('f_email').value='';
+  $('f_address').value='';
+  $('f_note').value='';
+  document.querySelectorAll('#tagBox .pill.on').forEach(p=>p.classList.remove('on'));
+  $('cardImageInput').value='';
+  currentImageDataUrl=null;
+  $('preview').style.display='none';
+
+  // jump to search
+  document.querySelector('.tab[data-tab="search"]').click();
+});
+
+/** =========================
+ *  Search
+ *  ========================= */
+$('q').addEventListener('input', debounce(refreshResults, 120));
+$('q_city').addEventListener('change', refreshResults);
+
+function debounce(fn, ms){
+  let t=null;
+  return (...args)=>{
+    clearTimeout(t);
+    t=setTimeout(()=>fn(...args), ms);
+  };
+}
+
+async function refreshResults(){
+  const all = await getAllCards();
+  const keyword = ($('q').value || '').trim().toLowerCase();
+  const city = $('q_city').value;
+  const tagFilter = Array.from(document.querySelectorAll('#q_tagBox .pill.on')).map(x=>x.dataset.tag);
+
+  let rows = all;
+
+  if(city && city !== '全部'){
+    rows = rows.filter(r => (r.city||'不確定') === city);
+  }
+  if(tagFilter.length){
+    rows = rows.filter(r => tagFilter.every(t => (r.tags||[]).includes(t)));
+  }
+  if(keyword){
+    rows = rows.filter(r => (r.search_text||'').includes(keyword));
+  }
+
+  // sort newest first
+  rows.sort((a,b)=> (b.created_at||'').localeCompare(a.created_at||''));
+
+  $('countHint').textContent = `共 ${rows.length} 筆符合（本機總數：${all.length}）`;
+  const list = $('resultList');
+  list.innerHTML='';
+  $('emptyTip').style.display = rows.length ? 'none' : 'block';
+
+  rows.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='item';
+    div.innerHTML = `
+      <img class="thumb" src="${r.image_data_url}" alt="名片縮圖">
+      <div class="meta">
+        <div class="name">${escapeHtml(r.name||'(未填姓名)')}</div>
+        <div class="company">${escapeHtml(r.company||'(未填公司)')}</div>
+        <div class="addr">${escapeHtml([r.city, r.address].filter(Boolean).join(' '))}</div>
+        <div class="tags" style="margin-top:8px">
+          ${(r.tags||[]).slice(0,4).map(t=>`<span class="pill on">${escapeHtml(t)}</span>`).join('')}
+          ${(r.tags||[]).length>4 ? `<span class="pill">+${(r.tags||[]).length-4}</span>`:''}
+        </div>
+      </div>
+      <div class="right">
+        <div class="hint">${new Date(r.created_at).toLocaleString()}</div>
+        <span class="pill">${escapeHtml(r.city||'不確定')}</span>
+      </div>
+    `;
+    div.addEventListener('click', ()=>openDetail(r));
+    list.appendChild(div);
+  });
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+/** =========================
+ *  Detail modal
+ *  ========================= */
+let currentDetail = null;
+
+function openDetail(r){
+  currentDetail = r;
+  $('d_title').textContent = `${r.name || '名片'}${r.company ? '｜'+r.company : ''}`;
+  $('d_img').src = r.image_data_url;
+
+  const kv = $('d_kv');
+  kv.innerHTML = '';
+  const items = [
+    ['姓名', r.name],
+    ['職稱', r.title],
+    ['公司/單位', r.company],
+    ['電話', (r.phones||[]).join('、')],
+    ['Email', (r.emails||[]).join('、')],
+    ['縣市', r.city],
+    ['地址', r.address]
+  ];
+  items.forEach(([k,v])=>{
+    if(!v) return;
+    const kEl=document.createElement('div'); kEl.className='k'; kEl.textContent=k;
+    const vEl=document.createElement('div'); vEl.className='v'; vEl.textContent=v;
+    kv.appendChild(kEl); kv.appendChild(vEl);
+  });
+
+  const tagsBox = $('d_tags');
+  tagsBox.innerHTML = (r.tags||[]).length
+    ? (r.tags||[]).map(t=>`<span class="pill on">${escapeHtml(t)}</span>`).join('')
+    : `<span class="pill">未勾選</span>`;
+
+  $('d_note').textContent = r.note || '（無）';
+  $('d_time').textContent = `建立時間：${new Date(r.created_at).toLocaleString()}`;
+
+  $('modal').classList.add('on');
+}
+
+$('btnClose').addEventListener('click', ()=> $('modal').classList.remove('on'));
+$('modal').addEventListener('click', (e)=>{
+  if(e.target.id==='modal') $('modal').classList.remove('on');
+});
+
+$('btnDelete').addEventListener('click', async ()=>{
+  if(!currentDetail) return;
+  if(!confirm('確定要刪除這張名片嗎？')) return;
+  await deleteCard(currentDetail.id);
+  $('modal').classList.remove('on');
+  toast('已刪除');
+  refreshResults();
+});
+
+$('btnEdit').addEventListener('click', async ()=>{
+  if(!currentDetail) return;
+  // Load into add form for quick edit: delete old then resave as new (simpler)
+  if(!confirm('將此筆帶回編輯。為避免覆蓋錯誤，系統會先刪除原本這筆，儲存時會建立新一筆。要繼續嗎？')) return;
+  await deleteCard(currentDetail.id);
+  $('modal').classList.remove('on');
+
+  // fill form
+  currentImageDataUrl = currentDetail.image_data_url;
+  $('preview').src = currentImageDataUrl;
+  $('preview').style.display='block';
+  $('f_name').value = currentDetail.name||'';
+  $('f_title').value = currentDetail.title||'';
+  $('f_company').value = currentDetail.company||'';
+  $('f_phone').value = (currentDetail.phones||[]).join('，');
+  $('f_email').value = (currentDetail.emails||[]).join('，');
+  $('f_address').value = currentDetail.address||'';
+  $('f_city').value = currentDetail.city || '不確定';
+  $('f_note').value = currentDetail.note || '';
+  document.querySelectorAll('#tagBox .pill').forEach(p=>{
+    p.classList.toggle('on', (currentDetail.tags||[]).includes(p.dataset.tag));
+  });
+
+  document.querySelector('.tab[data-tab="add"]').click();
+  toast('已載入到編輯區，修改後按「儲存」');
+});
+
+/** =========================
+ *  Delete all
+ *  ========================= */
+$('btnDeleteAll').addEventListener('click', async ()=>{
+  if(!confirm('確定要清空全部名片資料？此動作無法復原。')) return;
+  await clearAll();
+  toast('已清空');
+  refreshResults();
+});
+
+/** =========================
+ *  Backup / Import
+ *  ========================= */
+$('btnBackup').addEventListener('click', async ()=>{
+  const all = await getAllCards();
+  const blob = new Blob([JSON.stringify({exported_at:new Date().toISOString(), cards: all}, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `名片資料備份_${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+$('importFile').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const obj = JSON.parse(text);
+    const cards = obj.cards || [];
+    if(!Array.isArray(cards)) throw new Error('格式錯誤');
+    // merge by id; if no id, create one
+    for (const c of cards){
+      if(!c.id) c.id = uuid();
+      c.search_text = buildSearchText(c);
+      await putCard(c);
+    }
+    toast(`已匯入 ${cards.length} 筆`);
+    refreshResults();
+  }catch(err){
+    alert('匯入失敗：JSON格式不正確');
+  }finally{
+    e.target.value='';
+  }
+});
+
+// initial load for search panel count hint
+refreshResults();
+</script>
+</body>
+</html>
